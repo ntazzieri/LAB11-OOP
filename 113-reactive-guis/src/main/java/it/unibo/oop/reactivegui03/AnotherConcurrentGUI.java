@@ -38,16 +38,16 @@ public final class AnotherConcurrentGUI extends JFrame {
         panel.add(stop);
         this.getContentPane().add(panel);
         this.setVisible(true);
-        final Agent agent = new Agent();
-        final ClosingAgent closingAgent = new ClosingAgent(agent); 
-        new Thread(agent).start();
+        final CounterAgent counterAgent = new CounterAgent();
+        final ClosingAgent closingAgent = new ClosingAgent(counterAgent); 
+        new Thread(counterAgent).start();
         new Thread(closingAgent).start();
-        stop.addActionListener((e) -> stopExecution(agent));
-        up.addActionListener((e) -> agent.upCounting());
-        down.addActionListener((e) -> agent.downCounting());
+        stop.addActionListener((e) -> stopExecution(counterAgent));
+        up.addActionListener((e) -> counterAgent.upCounting());
+        down.addActionListener((e) -> counterAgent.downCounting());
     }
 
-    private void stopExecution(final Agent agent) {
+    private void stopExecution(final CounterAgent agent) {
         agent.stopCounting();
         up.setEnabled(false);
         down.setEnabled(false);
@@ -58,7 +58,7 @@ public final class AnotherConcurrentGUI extends JFrame {
      * The counter agent is implemented as a nested class. This makes it
      * invisible outside and encapsulated.
      */
-    private final class Agent implements Runnable {
+    private final class CounterAgent implements Runnable {
         private volatile boolean stop;
         private boolean up = true;
         private int counter;
@@ -67,7 +67,6 @@ public final class AnotherConcurrentGUI extends JFrame {
         public void run() {
             while (!this.stop) {
                 try {
-                    // The EDT doesn't access `counter` anymore, it doesn't need to be volatile 
                     final var nextText = Integer.toString(this.counter);
                     SwingUtilities.invokeAndWait(() -> AnotherConcurrentGUI.this.display.setText(nextText));
                     if (this.up) {
@@ -77,10 +76,6 @@ public final class AnotherConcurrentGUI extends JFrame {
                     }
                     Thread.sleep(100);
                 } catch (InvocationTargetException | InterruptedException ex) {
-                    /*
-                     * This is just a stack trace print, in a real program there
-                     * should be some logging and decent error reporting
-                     */
                     ex.printStackTrace();
                 }
             }
@@ -104,9 +99,9 @@ public final class AnotherConcurrentGUI extends JFrame {
 
     private final class ClosingAgent implements Runnable {
         private static final int CLOSING_TIME = 10_000;
-        private final Agent agent;
+        private final CounterAgent agent;
 
-        ClosingAgent(final Agent agent) {
+        ClosingAgent(final CounterAgent agent) {
             this.agent = agent;
         } 
 
